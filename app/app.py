@@ -6,15 +6,20 @@ from datetime import datetime
 
 st.set_page_config(
     page_title="Avaliação Clínica",
-    page_icon="🏥",
     layout="wide"
 )
 
-MODEL_PATH = "modelo.pkl"
-DB_PATH = "database.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-model = joblib.load(MODEL_PATH)
+model_path = os.path.join(BASE_DIR, "..", "modelos", "modelo.pkl")
+DATA_DIR = os.path.join(BASE_DIR, "..", "data")
+DB_PATH = os.path.join(DATA_DIR, "database.csv")
 
+@st.cache_resource
+def load_model(path):
+    return joblib.load(path)
+
+model = load_model(model_path)
 
 mapa_classes = {
     "Insufficient_Weight": "Abaixo do Peso",
