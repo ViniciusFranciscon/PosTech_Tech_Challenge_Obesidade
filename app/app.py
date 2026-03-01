@@ -4,22 +4,17 @@ import joblib
 import os
 from datetime import datetime
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "..", "modelos", "modelo.pkl")
+
+model = joblib.load(model_path)
+
 st.set_page_config(
     page_title="Avaliação Clínica",
+    page_icon="🏥",
     layout="wide"
 )
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-model_path = os.path.join(BASE_DIR, "..", "modelos", "modelo.pkl")
-DATA_DIR = os.path.join(BASE_DIR, "..", "data")
-DB_PATH = os.path.join(DATA_DIR, "database.csv")
-
-@st.cache_resource
-def load_model(path):
-    return joblib.load(path)
-
-model = load_model(model_path)
+DB_PATH = os.path.join(BASE_DIR, "..", "data", "database.csv")
 
 mapa_classes = {
     "Insufficient_Weight": "Abaixo do Peso",
@@ -31,27 +26,19 @@ mapa_classes = {
     "Obesity_Type_III": "Obesidade III"
 }
 
-
 if not os.path.exists(DB_PATH):
     df_init = pd.DataFrame(columns=[
-        "Data",
-        "Paciente",
-        "Sexo",
-        "Idade",
-        "Altura",
-        "Peso",
-        "IMC",
-        "Resultado"
+        "Data", "Paciente", "Sexo", "Idade",
+        "Altura", "Peso", "IMC", "Resultado"
     ])
     df_init.to_csv(DB_PATH, index=False)
-
 
 st.title("Sistema de Avaliação de Obesidade")
 st.markdown("### Ficha Médica Digital")
 
 st.divider()
 
-st.subheader("🪪 Identificação do Paciente")
+st.subheader("🪪 Identificação")
 
 col1, col2 = st.columns(2)
 
@@ -60,28 +47,17 @@ with col1:
     sexo = st.selectbox("Sexo", ["Masculino", "Feminino"])
 
 with col2:
-    idade = st.number_input("Idade (anos)", 1, 120, 30)
+    idade = st.number_input("Idade", 14, 100, 30)
     altura = st.number_input("Altura (m)", 1.20, 2.30, 1.70, step=0.01)
 
 peso = st.number_input("Peso (kg)", 30.0, 250.0, 70.0, step=0.5)
 
 imc = peso / (altura ** 2)
-
 st.metric("IMC", round(imc, 2))
-
-
-if imc < 18.5:
-    st.warning("Classificação IMC: Baixo Peso")
-elif 18.5 <= imc < 25:
-    st.success("Classificação IMC: Peso Normal")
-elif 25 <= imc < 30:
-    st.warning("Classificação IMC: Sobrepeso")
-else:
-    st.error("Classificação IMC: Obesidade")
 
 st.divider()
 
-st.subheader("Histórico")
+st.subheader("Histórico Clínico")
 
 historico_familiar = st.radio(
     "Histórico familiar de obesidade",
@@ -89,9 +65,16 @@ historico_familiar = st.radio(
     horizontal=True
 )
 
+monitoramento_calorico = st.radio(
+    "Monitora ingestão calórica?",
+    ["Sim", "Não"],
+    horizontal=True
+)
+
 st.divider()
 
-st.subheader("Hábitos")
+
+st.subheader("Hábitos de Vida")
 
 col1, col2 = st.columns(2)
 
@@ -102,24 +85,49 @@ with col1:
         horizontal=True
     )
 
-    sedentarismo = st.radio(
-        "Sedentarismo",
-        ["Sim", "Não"],
-        horizontal=True
+    vegetais = st.selectbox(
+        "Frequência de consumo de vegetais",
+        ["1 - Raramente", "2 - Às vezes", "3 - Sempre"]
+    )
+
+    refeicoes = st.selectbox(
+        "Número de refeições principais",
+        ["1", "2", "3", "4 ou mais"]
+    )
+
+    lanches = st.selectbox(
+        "Faz lanches entre refeições",
+        ["no", "Sometimes", "Frequently", "Always"]
     )
 
 with col2:
-    tabagismo = st.radio(
-        "Fuma?",
-        ["Sim", "Não"],
-        horizontal=True
+    agua = st.selectbox(
+        "Consumo diário de água",
+        ["1 - <1L", "2 - 1-2L", "3 - >2L"]
     )
 
-    alcool = st.radio(
-        "Consumo regular de álcool",
-        ["Sim", "Não"],
-        horizontal=True
+    atividade = st.selectbox(
+        "Frequência de atividade física",
+        ["0 - Nenhuma", "1 - 1-2x/sem", "2 - 3-4x/sem", "3 - 5x ou mais"]
     )
+
+    tempo_tela = st.selectbox(
+        "Tempo diário de tela",
+        ["0 - 0-2h", "1 - 3-5h", "2 - >5h"]
+    )
+
+    transporte = st.selectbox(
+        "Meio de transporte",
+        ["Automobile", "Motorbike", "Bike",
+         "Public_Transportation", "Walking"]
+    )
+
+tabagismo = st.radio("Fuma?", ["Sim", "Não"], horizontal=True)
+
+alcool = st.selectbox(
+    "Consumo de álcool",
+    ["no", "Sometimes", "Frequently", "Always"]
+)
 
 st.divider()
 
@@ -133,22 +141,22 @@ if st.button("Gerar Avaliação", use_container_width=True):
         "Weight": peso,
         "family_history": "yes" if historico_familiar == "Sim" else "no",
         "FAVC": "yes" if consumo_calorico == "Sim" else "no",
-        "FCVC": 1.0,
-        "NCP": 3.0,
-        "CAEC": "Sometimes",
+        "FCVC": int(vegetais[0]),
+        "NCP": 4 if refeicoes == "4 ou mais" else int(refeicoes),
+        "CAEC": lanches,
         "SMOKE": "yes" if tabagismo == "Sim" else "no",
-        "CH2O": 2.0,
-        "SCC": "no",
-        "FAF": 0.0 if sedentarismo == "Sim" else 2.0,
-        "TUE": 1.0,
-        "CALC": "Frequently" if alcool == "Sim" else "no",
-        "MTRANS": "Public_Transportation"
+        "CH2O": int(agua[0]),
+        "SCC": "yes" if monitoramento_calorico == "Sim" else "no",
+        "FAF": int(atividade[0]),
+        "TUE": int(tempo_tela[0]),
+        "CALC": alcool,
+        "MTRANS": transporte
     }])
 
     resultado_modelo = model.predict(dados)[0]
     resultado = mapa_classes.get(resultado_modelo, resultado_modelo)
 
-    st.subheader("📊 Resultado da Avaliação")
+    st.subheader("Resultado")
 
     if resultado == "Peso Normal":
         st.success(f"🟢 {resultado}")
@@ -174,7 +182,7 @@ if st.button("Gerar Avaliação", use_container_width=True):
     df = pd.concat([df, novo_registro], ignore_index=True)
     df.to_csv(DB_PATH, index=False)
 
-    st.info("Registro salvo no histórico clínico.")
+    st.success("Registro salvo com sucesso.")
 
 st.divider()
 
