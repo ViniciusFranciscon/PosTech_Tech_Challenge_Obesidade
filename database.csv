@@ -1,0 +1,5 @@
+Data,Paciente,Sexo,Idade,Altura,Peso,IMC,Resultado
+01/03/2026 13:20,Vinicius Franciscon,Masculino,27,1.75,81.5,26.61,Overweight_Level_II
+01/03/2026 13:28,Thalita Azevedo,Feminino,22,1.55,46.0,19.15,Peso Normal
+01/03/2026 13:28,Thalita Azevedo 02,Feminino,45,1.72,120.0,40.56,Obesidade II
+01/03/2026 13:29,Josefina Nunes,Feminino,20,1.65,82.0,30.12,Sobrepeso II
